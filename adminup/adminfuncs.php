@@ -98,8 +98,8 @@ function addMenu(){
         </script>
         <b>Option: Add New Item</b><br><br>
         <form action='./?act=addConf' method='post' onSubmit='return verifySub()' enctype="multipart/form-data">
-            <label>Choose a file to Upload:</label><br>
-            <input type='file' id='newart' name='newart' accept="image/png, image/jpeg"><br> <b>OR</b><br>
+            <label>Choose a file to Upload (png,jpg,jpeg, gif):</label><br>
+            <input type='file' id='newart' name='newart' accept="image/png, image/jpeg, image/x-png,image/gif"><br> <b>OR</b><br>
             
             <label>Image URL</label><br>
             <input type='text' id='urlloc' name='urlloc' onchange='loadurl()' onfocusout='loadurl()' value=''><br><br>
@@ -288,6 +288,29 @@ function addItemConf(){
         7 => 'Failed to write file to disk.',
         8 => 'A PHP extension stopped the file upload.',
     );    
+    $imageTypeArray = array
+    (
+        0=>'UNKNOWN',
+        1=>'GIF',
+        2=>'JPEG',
+        3=>'PNG',
+        4=>'SWF',
+        5=>'PSD',
+        6=>'BMP',
+        7=>'TIFF_II',
+        8=>'TIFF_MM',
+        9=>'JPC',
+        10=>'JP2',
+        11=>'JPX',
+        12=>'JB2',
+        13=>'SWC',
+        14=>'IFF',
+        15=>'WBMP',
+        16=>'XBM',
+        17=>'ICO',
+        18=>'COUNT' 
+    );
+    
     if(array_key_exists('newart', $_FILES)  || (array_key_exists('urlloc', $_POST) && $_POST['urlloc'] != '')
         && array_key_exists('title', $_POST) && array_key_exists('caption', $_POST) && array_key_exists('order', $_POST)){
         
@@ -297,6 +320,7 @@ function addItemConf(){
         {     
             /*check if the file uploaded is an image*/
             if(strlen($_FILES['newart']['tmp_name'])>0 &&  getimagesize($_FILES["newart"]["tmp_name"])){
+                $imData = getimagesize($_FILES["newart"]["tmp_name"]); 
                 $now = time(); 
                 $fname = $now.$_FILES["newart"]["name"]; 
                 $moved = move_uploaded_file($_FILES["newart"]["tmp_name"], "../imgs/".$fname);
@@ -304,9 +328,18 @@ function addItemConf(){
                     echo "<br>Successfully uploaded<br>";
                    /*converting file to jpg and creating thumbnail*/
                    /*Why convert to jpg? To reduce the filesize*/
-                   $jpg_fname = explode(".", $fname)[0]."conv.jpg"; 
-                   exec("cd ../imgs && convert -quality ". JPG_QUALITY." \"$fname\" \"$jpg_fname\" && convert -resize 150x \"$jpg_fname\" \"thumb$jpg_fname\" && chmod a+r \"$jpg_fname\" && rm \"$fname\"",
+                   $rcode = 0; 
+                   $out = ""; 
+                   if($imData[2] == 1){/*if it is a gif*/
+                        $jpg_fname = explode(".", $fname)[0]."conv.gif"; 
+                        exec("cd ../imgs && cp \"$jpg_fname\" \"thumb$jpg_fname\" && chmod a+r \"$jpg_fname\" ",
                             $out, $rcode);
+                   }else{
+                        $jpg_fname = explode(".", $fname)[0]."conv.jpg"; 
+                        exec("cd ../imgs && convert -quality ". JPG_QUALITY." \"$fname\" \"$jpg_fname\" && convert -resize 150x \"$jpg_fname\" \"thumb$jpg_fname\" && chmod a+r \"$jpg_fname\" && rm \"$fname\"",
+                            $out, $rcode);
+                   }
+
                     if($rcode != 0){
                         
                         echo ErrorString("Error in conversion:".$out); 
@@ -337,14 +370,26 @@ function addItemConf(){
                         $fshort = substr($fshort,0,10).substr($fshort,10,10);
                     }
                     
+                    $imData = getimagesize($_POST['urlloc']); 
+                    
                     $fname = $now.$fshort; 
                     $jpg_fname = explode(".", $fname)[0]."conv.jpg"; 
-                    exec("cd ../imgs && wget \"$imurl\" -O \"$fname\" && convert -quality ". JPG_QUALITY." \"$fname\" \"$jpg_fname\" && convert -resize 150x \"$jpg_fname\" \"thumb$jpg_fname\" && chmod a+r \"$jpg_fname\" && rm \"$fname\"",
+                    $rcode = 0; 
+                    $out = ""; 
+                    $cmd = ""; 
+                    if($imData[2] == 1){/*if it is a gif*/
+                        $jpg_fname = $now.$fshort."conv.gif"; 
+                        $cmd = "cd ../imgs && wget \"$imurl\" -O \"$jpg_fname\" && cp \"$jpg_fname\" \"thumb$jpg_fname\" && chmod a+r \"$jpg_fname\" ";
+                        exec($cmd, $out, $rcode);
+                    }else{
+                        //$jpg_fname = explode(".", $fname)[0]."conv.jpg"; 
+                        exec("cd ../imgs && wget \"$imurl\" -O \"$fname\" && convert -quality ". JPG_QUALITY." \"$fname\" \"$jpg_fname\" && convert -resize 150x \"$jpg_fname\" \"thumb$jpg_fname\" && chmod a+r \"$jpg_fname\" && rm \"$fname\"",
                             $out, $rcode);
+                    }                    
                             
                     if($rcode != 0){                      
                         
-                        echo ErrorString("Error Downloading or converting file:".$out); 
+                        echo ErrorString("Error Downloading or converting file:".$cmd.">>".$out); 
                         
                     }else{
                         /*now add item to data base*/

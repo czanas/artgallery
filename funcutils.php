@@ -481,7 +481,7 @@ function miniSummary($item){
             $string.= "\n\n<div style='border:1px solid black;padding:5px;margin-top:5px;margin-bottom:5px;max-width:200px' id='item${item['id']}' name='item${item['id']}'
                         ondrop='drop(event, this.id)' ondragover='allowDrop(event)' >";
             $string.= "<b>Title</b>: ".$item['title']."<br>";
-            $string.= "<img src='../imgs/thumb".$item['name']."?t=$now'  draggable='true' ondragstart='drag(event, this.id)' id='drag${item['id']}'><br>";
+            $string.= "<img src='../imgs/thumb".$item['name']."?t=$now'  draggable='true' ondragstart='drag(event, this.id)' id='drag${item['id']}' style='max-width:200px'><br>";
             $string.= "<b>Caption</b>: ".$cap."<br>";
             $string.= "<b>Views</b>: ".$item['view']."<br>";
             $string.= "<b>Visibility</b>: "; 

@@ -682,7 +682,7 @@ function renderGallery(){
                         </span>
                         
                 </div> 
-                <div><a href='#showall' onclick='showAllThumb()'>Show all Item in Gallery</a><br>&nbsp;</div>
+                <div><a href='#showall' onclick='showAllThumb()'>Show all Items in Gallery</a><br>&nbsp;</div>
                 <!-- other items in the gallery -->
                 <div id='galleryContainer' name='showall'>
                        

@@ -81,7 +81,7 @@ has the full path to the .htpasswd file as in:
 `AuthUserFile /full/file/path/.htpasswd` 
 
 ### Q: I see an Array dump (texts on top of the page)
-**A**: `DEV` constant in ``appConst.php`` is probably set to `true`. Set that value to `false.
+**A**: `DEV` constant in ``appConst.php`` is probably set to `true`. Set that value to `false`.
 
 ### Q: I am unable to upload pictures to the gallery through admin panel.
 **A**: Make sure of the followings

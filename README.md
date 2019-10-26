@@ -27,7 +27,9 @@ It allows users to show their art (captured as an image).
 
 ## Requirements and Dependencies
 - A webserver capable of running PHP,
-- imagick tool installed (for the use of `convert` tool),
+- `shell_exec` and `exec` need to be enabled for `PHP`
+- `imagick` tool installed (for the use of `convert` tool),
+- `wget` needs to be available
 - `SQLite3`
 - `Jquery` (included in this release)
 - `SweetAlert` (incluced in this release). [SweetAlert 2 GitHub](https://sweetalert2.github.io/).

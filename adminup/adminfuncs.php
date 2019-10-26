@@ -62,21 +62,49 @@ function addMenu(){
                 var title = $('#title').val();
                 var caption = $('#caption').val(); 
                 var art = $('#newart').val(); 
-                if(title=='' || art=='' || caption==''){
+                var urlart = $('#urlloc').val(); 
+                
+                if(title=='' || (art=='' && urlart=='') ){
                     
-                    var errorText = title==''?"Title":(art==''?"Art File"); 
+                    var errorText = title==''?"Title":(art==''&&urlart==''?"Art File":'--'); 
                     alert( errorText+" Cannot be left empty."); 
                 }else{
                     ret = true;
                 }
+                if(art!='' && urlart!='')
+                {
+                    ret = false; 
+                    alert('Please either upload an image or provide a link to an image. Not both'); 
+                    
+                }
                 return ret; 
             }
         
+            function loadurl(){
+                var urlart = $('#urlloc').val();
+                console.log('loading url');
+                if(urlart != '')
+                {
+                    $('#imgpreview').html("<b>Image Preview</b>Please check your link if you cannot see any preview.<br>Google Photo? Click first on the image to make it 'full screen' then right click to copy image location<br><img src='"+urlart+"' style='max-width:150px;max-height:150px'>"); 
+                }else{
+                     $('#imgpreview').html(""); 
+                }
+                
+            }
+            
+            function clearAll(){
+                $('#urlloc').val('');
+            }
         </script>
         <b>Option: Add New Item</b><br><br>
         <form action='./?act=addConf' method='post' onSubmit='return verifySub()' enctype="multipart/form-data">
             <label>Choose a file to Upload:</label><br>
-            <input type='file' id='newart' name='newart' accept="image/png, image/jpeg"><br><br>
+            <input type='file' id='newart' name='newart' accept="image/png, image/jpeg"><br> <b>OR</b><br>
+            
+            <label>Image URL</label><br>
+            <input type='text' id='urlloc' name='urlloc' onchange='loadurl()' onfocusout='loadurl()' value=''><br><br>
+            
+            <span id='imgpreview'></span><br><br>
             <label>Art Title:</label><br>
             <textarea type='text' id='title' name='title' rows="2" cols="33"></textarea><br><br>
             
@@ -260,14 +288,15 @@ function addItemConf(){
         7 => 'Failed to write file to disk.',
         8 => 'A PHP extension stopped the file upload.',
     );    
-    if(array_key_exists('newart', $_FILES) && array_key_exists('title', $_POST) && array_key_exists('caption', $_POST) && array_key_exists('order', $_POST)){
+    if(array_key_exists('newart', $_FILES)  || (array_key_exists('urlloc', $_POST) && $_POST['urlloc'] != '')
+        && array_key_exists('title', $_POST) && array_key_exists('caption', $_POST) && array_key_exists('order', $_POST)){
         
         
         /*check if file was uploaded correctly*/
-        if($_FILES['newart']['error'] == 0)
+        if($_FILES['newart']['error'] == 0 || $_POST['urlloc'] != '')
         {     
             /*check if the file uploaded is an image*/
-            if(getimagesize($_FILES["newart"]["tmp_name"])){
+            if(strlen($_FILES['newart']['tmp_name'])>0 &&  getimagesize($_FILES["newart"]["tmp_name"])){
                 $now = time(); 
                 $fname = $now.$_FILES["newart"]["name"]; 
                 $moved = move_uploaded_file($_FILES["newart"]["tmp_name"], "../imgs/".$fname);
@@ -276,7 +305,7 @@ function addItemConf(){
                    /*converting file to jpg and creating thumbnail*/
                    /*Why convert to jpg? To reduce the filesize*/
                    $jpg_fname = explode(".", $fname)[0]."conv.jpg"; 
-                   exec("cd ../imgs && convert -quality ". JPG_QUALITY." $fname $jpg_fname && convert -resize 150x $jpg_fname thumb$jpg_fname && chmod a+r $jpg_fname && rm $fname",
+                   exec("cd ../imgs && convert -quality ". JPG_QUALITY." \"$fname\" \"$jpg_fname\" && convert -resize 150x \"$jpg_fname\" \"thumb$jpg_fname\" && chmod a+r \"$jpg_fname\" && rm \"$fname\"",
                             $out, $rcode);
                     if($rcode != 0){
                         
@@ -299,10 +328,43 @@ function addItemConf(){
                     echo ErrorString("File could not be moved to the imgs folder. Please check that apache has write priviledge to that folder.");
                     
                 }
-            }else{
+            }elseif(getimagesize($_POST['urlloc'])){
+                    $imurl = $_POST['urlloc']; 
+                    $now = time(); 
+                    $fshort = explode("/",$imurl);
+                    $fshort = $fshort[count($fshort)-1];
+                    if(strlen($fshort)>255){
+                        $fshort = substr($fshort,0,10).substr($fshort,10,10);
+                    }
+                    
+                    $fname = $now.$fshort; 
+                    $jpg_fname = explode(".", $fname)[0]."conv.jpg"; 
+                    exec("cd ../imgs && wget \"$imurl\" -O \"$fname\" && convert -quality ". JPG_QUALITY." \"$fname\" \"$jpg_fname\" && convert -resize 150x \"$jpg_fname\" \"thumb$jpg_fname\" && chmod a+r \"$jpg_fname\" && rm \"$fname\"",
+                            $out, $rcode);
+                            
+                    if($rcode != 0){                      
+                        
+                        echo ErrorString("Error Downloading or converting file:".$out); 
+                        
+                    }else{
+                        /*now add item to data base*/
+                        $_db = new artDB();
+                        if($_POST['order'] == "first"){
+                            $_db->addItem($jpg_fname, $_POST['caption'], $_POST['title'], $now, 1); 
+                        }else{
+                            $order = $_db->getLastItem()['vieworder']-1;
+                            //echo "LAST ".$now;
+                            $_db->addItem($jpg_fname, $_POST['caption'], $_POST['title'], $now, 1, $order); 
+                        }
+                        //print_r($_POST);
+                        echo SuccessString("Item: ".$_POST['title']." Added!");
+                    }
+            }                    
+            else{
                 
                 echo ErrorString("Uploaded file needs to be an image"); 
             }
+            
         }else{
             echo ErrorString("File Not uploaded because of error #".$_FILES["newart"]["error"].": ".$phpFileUploadErrors[$_FILES["newart"]["error"]]);
         }
@@ -311,7 +373,7 @@ function addItemConf(){
       
         echo ErrorString("Error: Empty form elements were sent. All form element must be set."); 
     }
-    echo "<br><br><a href='./?act=add'>Add New Art</a><br><br><a href='./'>Back to Main Manu</a>";
+    echo "<br><br><a href='./?act=add'>Add New Art</a><br><br><a href='./'>Back to Main Menu</a>";
     
     
 }

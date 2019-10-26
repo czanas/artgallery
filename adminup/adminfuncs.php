@@ -99,7 +99,7 @@ function addMenu(){
         <b>Option: Add New Item</b><br><br>
         <form action='./?act=addConf' method='post' onSubmit='return verifySub()' enctype="multipart/form-data">
             <label>Choose a file to Upload (png,jpg,jpeg, gif):</label><br>
-            <input type='file' id='newart' name='newart' accept="image/png, image/jpeg, image/x-png,image/gif"><br> <b>OR</b><br>
+            <input type='file' id='newart' name='newart' accept=".png, .jpeg, .jpg, .gif"><br> <b>OR</b><br>
             
             <label>Image URL</label><br>
             <input type='text' id='urlloc' name='urlloc' onchange='loadurl()' onfocusout='loadurl()' value=''><br><br>

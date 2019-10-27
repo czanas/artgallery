@@ -628,11 +628,12 @@ function renderGallery(){
     <!--style='box-shadow:0 0 0 10px hsl(0, 0%, 60%),0 0 0 15px hsl(0, 0%, 90%);border: 5px solid hsl(0, 0%, 40%);  padding: 5px;' align='center'-->
     <!-- The Modal -->
     <div id="myModal" class="modal">
-            <span class="close">Close or [ESC]</span>
-          <img class="modal-content" id="img01">
-          <div id="caption"></div>
+        <span class="close">Close or [ESC]</span>
+        <img class="modal-content" id="img01" src='./imgs/blank.jpg' alt=''>
+        <div id="caption"></div>
     </div> 
-    <div style='padding:10px;' align='center'>
+    
+    <div style='width:100%;padding:10px;margin:auto'>
         <div id='biggerContainer' style='background-color:hsl(0, 0%, 80%);box-shadow:0 0 0 10px hsl(0, 0%, 60%),0 0 0 15px hsl(0, 0%, 90%);border: 5px solid hsl(0, 0%, 40%);  padding: 5px;'>
             <!-- row flex -->
             <div id='mainContainer'> 
@@ -684,30 +685,38 @@ function renderGallery(){
                 </div> 
                 <div><a href='#showall' onclick='showAllThumb()'>Show all Items in Gallery</a><br>&nbsp;</div>
                 <!-- other items in the gallery -->
-                <div id='galleryContainer' name='showall'>
+                <div id='galleryContainer'>
                        
-                <?php
-                
-                if(SHOW_RAND_GALLERY){
-                    ?>
-
-                        <div id='randTitle'>Random Gallery Items (out of <b><?=$_db->getShownCount()?></b>)</div>
-                        <?php
-                            $galleryItems = $_db->getnRandomShownItems(MAX_RAND_GALLERY, $thisItem['id']);
-                            foreach($galleryItems as $items)
-                            {
-                                $im_data = getimagesize("./imgs/${items['name']}");
-                                $width=$im_data[1]>100?100:$im_data[1]; 
-                                echo "<div class='galleryItem' onclick='moveTo(${items['id']})'><img src='./imgs/thumb${items['name']}' style='width:100%'></div>\n";
-                            }
-                        ?>
-                    
                     <?php
-                }
-                ?>
+                    
+                    if(SHOW_RAND_GALLERY){
+                        ?>
+
+                            <div id='randTitle'>Random Gallery Items (out of <b><?=$_db->getShownCount()?></b>)</div>
+                            <?php
+                                $galleryItems = $_db->getnRandomShownItems(MAX_RAND_GALLERY, $thisItem['id']);
+                                foreach($galleryItems as $items)
+                                {
+                                    $im_data = getimagesize("./imgs/${items['name']}");
+                                    $width=$im_data[1]>100?100:$im_data[1]; 
+                                    echo "<div class='galleryItem' onclick='moveTo(${items['id']})'><img src='./imgs/thumb${items['name']}' style='width:100%' alt='gallery item'></div>\n";
+                                }
+                            ?>
+                        
+                        <?php
+                    }
+                    ?>
                 </div>
             </div>
             
+            
+            <div id='credit'>
+                Art Gallery: A Midnight Zen Production. version 1.0. <i><a href='https://github.com/czanas/artgallery' target='_blank'>@github</a></i>
+            </div>
+        </div>
+        
+    </div> 
+
             <script>
             /*
                 $(document).bind('keydown', 'right', function(){moveNext();});
@@ -865,12 +874,7 @@ function renderGallery(){
                                 
                             });
                 }
-            </script>
-            <div id='credit'>
-                Art Gallery: A Midnight Zen Production. version 1.0. <i><a href='https://github.com/czanas/artgallery' target='_blank'>@github</a>
-            </div>
-        </div>
-    </div>    
+            </script>    
     <?php   
 }
 
@@ -914,7 +918,7 @@ function promptAccess(){
                 </div>
             </div>
             <div id='credit'>
-                Art Gallery: A Midnight Zen Production. version 1.0. <i><a href='https://github.com/czanas/artgallery' target='_blank'>@github</a>
+                Art Gallery: A Midnight Zen Production. version 1.0. <i><a href='https://github.com/czanas/artgallery' target='_blank'>@github</a></i>
             </div>
         </div>
     <?php

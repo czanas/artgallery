@@ -20,7 +20,7 @@ Please to give me credit, leave this part intact
 @date: 2019-10-23
 
 -->
-<html>
+<html lang='en'>
 	<head><title><?=ART_TITLE?></title>
         <script src='./jquery-3.4.1.min.js'></script>
         <script src='./sweetalert2v8.js'></script>
@@ -31,7 +31,7 @@ Please to give me credit, leave this part intact
                 }
                 #titlePart{
                     border:solid 1px black;
-                    padding:-2px;width:600px;
+                    width:600px;
                     text-align:center;
                     border-radius:5px;
                     font-weight:bold; 
@@ -39,7 +39,7 @@ Please to give me credit, leave this part intact
                 }
                 #previousPart{
                     border:solid 1px black;
-                    padding:-2px;
+                   
                     width:50px;
                     text-align:left;
                     margin-right:5px;
@@ -51,7 +51,7 @@ Please to give me credit, leave this part intact
                 }
                 #fastPreviousPart{
                     border:solid 1px black;
-                    padding:-2px;
+                    
                     width:20px;
                     text-align:left;
                     margin-right:5px;
@@ -89,7 +89,7 @@ Please to give me credit, leave this part intact
                 }
                 #nextPart{
                     border:solid 1px black;
-                    padding:-2px;
+                    
                     width:50px;
                     text-align:right;  
                     margin-left:5px;
@@ -102,7 +102,7 @@ Please to give me credit, leave this part intact
                 
                 #fastNextPart{
                     border:solid 1px black;
-                    padding:-2px;
+                    
                     width:20px;
                     text-align:right;  
                     margin-left:5px;
@@ -125,6 +125,7 @@ Please to give me credit, leave this part intact
                     margin:5px;
                 }
                 #biggerContainer{
+                    margin:auto;
                     width:610px;
                     border: 1px solid black;
                 }
@@ -140,7 +141,7 @@ Please to give me credit, leave this part intact
                 }
                 #galleryContainer{
                     border:solid 1px black;
-                    padding:-2px;
+                    
                     width:600px;
                     display:flex;
                     justify-content:space-evenly;
@@ -171,7 +172,7 @@ Please to give me credit, leave this part intact
                 }
                 #titlePart{
                     border:solid 1px black;
-                    padding:-2px;width:90%;
+                    width:90%;
                     text-align:center;
                     border-radius:5px;
                     font-weight:bold; 
@@ -182,7 +183,7 @@ Please to give me credit, leave this part intact
                 }
                 #previousPartMobile{
                     border:solid 1px black;
-                    padding:-2px;
+                    
                     margin-top:5px;
                     width:60px;
                     text-align:left;
@@ -195,7 +196,7 @@ Please to give me credit, leave this part intact
                 #nextPartMobile{
                     border:solid 1px black;
                     margin-top:5px;
-                    padding:-2px;
+                    
                     width:60px;
                     text-align:right;
                     margin-left:5px;
@@ -206,7 +207,7 @@ Please to give me credit, leave this part intact
                 }
                 #fastPreviousPartMobile{
                     border:solid 1px black;
-                    padding:-2px;
+                    
                     width:20px;
                     text-align:left;
                     margin-right:5px;
@@ -218,7 +219,7 @@ Please to give me credit, leave this part intact
                 }
                 #fastNextPartMobile{
                     border:solid 1px black;
-                    padding:-2px;
+                    
                     width:20px;
                     text-align:right;  
                     margin-left:5px;
@@ -279,7 +280,7 @@ Please to give me credit, leave this part intact
                 }
                 #galleryContainer{
                     border:solid 1px black;
-                    padding:-2px;
+                    
                     width:90%;
                     display:flex;
                     justify-content:space-evenly;
@@ -514,15 +515,15 @@ Please to give me credit, leave this part intact
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 	</head>
 	<body>
-
-        <?php
-            if(hasAccess()){
-                renderGallery();
-            }else{
-                promptAccess();
-            }
-        ?>       
-        </script>        
+        <div style='width:100%;text-align:center'>
+            <?php
+                if(hasAccess()){
+                    renderGallery();
+                }else{
+                    promptAccess();
+                }
+            ?>     
+        </div>
 	</body>
 
 </html>

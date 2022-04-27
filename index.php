@@ -9,6 +9,8 @@
     **/
     require('./funcutils.php'); 
     $test_db = new artDB();
+	$allUSettings = $test_db->getUserSettings();
+	//A PE LES
 ?>
     
 <!DOCTYPE html>
@@ -21,13 +23,21 @@ Please to give me credit, leave this part intact
 
 -->
 <html lang='en'>
-	<head><title><?=ART_TITLE?></title>
+	<head>
         <script src='./jquery-3.4.1.min.js'></script>
         <script src='./sweetalert2v8.js'></script>
-        <style>
+        <style type='text/css'>
             /*css for device with width > 720 px*/
+			*{
+				--background-color: <?=$allUSettings['background_color']['data']?>; 
+				--border_radius:<?=$allUSettings['imgborder_radius']['data']?>; 
+                --border_style:<?=$allUSettings['imgborder_style']['data']?>;
+                --border_color:<?=$allUSettings['imgborder_color']['data']?>; 
+                --border_width:<?=$allUSettings['imgborder_width']['data']?>; 
+			}
+			
             @media(min-width:720px){
-                body{background-color: hsl(0, 0%, 60%);
+                body{background-color: var(--background-color);
                 }
                 #titlePart{
                     border:solid 1px black;
@@ -85,7 +95,10 @@ Please to give me credit, leave this part intact
                     margin-top:5px;
                     width:590px;   
                     margin-bottom:5px;
-                    border:solid 4px black;
+                    border-width: var(--border_width); 
+                    border-style: var(--border_style); 
+                    border-color: var(--border_color);
+                    border-radius:var(--border_radius); 
                 }
                 #nextPart{
                     border:solid 1px black;
@@ -157,7 +170,11 @@ Please to give me credit, leave this part intact
                     cursor:pointer;
                 }
                 .galleryItem > img{
-                    border:solid 1px black;
+                    border-width: var(--border_width); 
+                    border-style: var(--border_style); 
+                    border-color: var(--border_color);
+                    border-radius:var(--border_radius); 
+                   
                 }
                 #credit{
                     font-size:10px;
@@ -168,7 +185,7 @@ Please to give me credit, leave this part intact
             }
             /*css for device with width > 720 px*/
             @media screen and (max-width:719px){
-                body{/*background-color:whitesmoke;*/background-color: hsl(0, 0%, 60%);
+                body{/*background-color:whitesmoke;*/background-color: var(--background-color);
                 }
                 #titlePart{
                     border:solid 1px black;
@@ -248,7 +265,10 @@ Please to give me credit, leave this part intact
                     margin-top:5px;
                     width:90%;   
                     margin-bottom:5px;
-                    border:solid 4px black;
+                    border-width: var(--border_width); 
+                    border-style: var(--border_style); 
+                    border-color: var(--border_color);
+                    border-radius:var(--border_radius); 
                 }
                 #nextPart{
                     display:none;
@@ -296,7 +316,10 @@ Please to give me credit, leave this part intact
                     cursor:pointer;
                 }
                 .galleryItem > img{
-                    border:solid 1px black;
+                    border-width: var(--border_width); 
+                    border-style: var(--border_style); 
+                    border-color: var(--border_color);
+                    border-radius: var(--border_radius); 
                 }
                 #credit{
                     font-size:10px;
@@ -398,7 +421,7 @@ Please to give me credit, leave this part intact
                                           
         </style>
         
-        <script>
+        <script type='text/javascript'>
             /**
                 @Note: the variables 
                 next_id and prev_id have to be set by php on the server side
@@ -459,7 +482,58 @@ Please to give me credit, leave this part intact
             **/
             function moveTo(id){
                 // Simulate a mouse click:
-                window.location.href = "./?id="+id; 
+				//Add Loading Animation here
+				var old_height = $('#myImg').height();
+				var old_width = $('#myImg').width(); 
+				$('#myImg').attr("src", "./imgs/loading.svg");
+				$('#myImg').css({'width':`${old_width}px`, 'height':`${old_height}px`}); 
+				var delay = 500; /*add a small delay before rendering to avoid flashing loading screen*/
+				$.get('./art_api.php', {'id':id}, function(data){
+					setTimeout(function(){
+						data = JSON.parse(data); 
+						prev_id = data.prev.id; 
+						next_id = data.next.id; 
+						this_id = data.item.id; 
+						
+						if(data.prev.width != 0){
+							$('#previousPartMobile').css(
+								{ 'background-image':`url('./imgs/thumb${data.prev.name}')`, 
+								   'background-size':'50%',
+								   'background-repeat':'no-repeat',
+								   'background-position':'center'
+								}
+							);
+							$('#previousPart').html(`&Larr;&nbsp;<br><img src='./imgs/thumb${data.prev.name}' style='width:50px'><br>&Larr;&nbsp;`);
+						}else{
+							
+							$('#previousPart').html(`&Larr;`); 
+						}
+						
+						if(data.next.width != 0){
+							$('#nextPartMobile').css(
+								{ 'background-image':`url('./imgs/thumb${data.next.name}')`, 
+								   'background-size':'50%',
+								   'background-repeat':'no-repeat',
+								   'background-position':'center'
+								}
+							);	
+							$('#nextPart').html(`&Rarr;&nbsp;<br><img src='./imgs/thumb${data.next.name}' style='width:50px'><br>&Rarr;&nbsp;`);
+						}else{
+							$('#nextPart').html(`&Rarr;`); 
+						}
+						
+						if(data.item.width != 0){
+							$('#myImg').attr('src', `./imgs/${data.item.name}`); 
+							$('#myImg').attr('alt', data.item.title); 
+							$('#myImg').css({'width':'590px !important', 'height':'auto'});
+						}
+						$('#titlePart').html(data.item.title); 
+						console.log(data); 
+						history.pushState({'urlPath':`index.php?id=${data.item.id}`, 'id':data.item.id}, `${data.item.title}`, `?id=${data.item.id}`);
+					}, delay); 
+				});
+                //window.location.href = "./?id="+id; 
+
             }
             
             function detectswipe(el,func) {
@@ -513,6 +587,11 @@ Please to give me credit, leave this part intact
             //detectswipe('swipeme',myfunction);            
         </script>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="A Simple Art Gallery; show your art to your friends">
+        <meta name='keyword' content='Art Drawing, HunsterVerse Art'>
+	    <meta name='content-type' content='text/html; charset=utf-8'>
+
+        <title><?=$allUSettings['ART_TITLE']['data']?></title>
 	</head>
 	<body>
         <div style='width:100%;text-align:center'>

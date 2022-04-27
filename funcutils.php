@@ -45,8 +45,9 @@ class artDB{
     *   @desctiption: constructor. Is responsible for checking if the SQLite DB exists or not
     *   @param: location of database, name of database 
     *   @return: none
+	*	creates or extend existing database with default values and needed tables.
     **/
-    public function __construct($location=DB_LOCATION, $dbName=DB_NAME)
+    public function __construct($location=DB_LOCATION, $dbName=DB_NAME, $INIT_DB=false)
     {
         
         /*check if sqlite exists*/
@@ -60,15 +61,19 @@ class artDB{
             $this->sqlDB = new SQLite3("$location/$dbName");
             $this->sqlDB->busyTimeout(5000);
             $this->sqlDB->exec("PRAGMA journal_mode = wal;"); 
-            $sql_create = "CREATE TABLE IF NOT EXISTS `art` (`id`	INTEGER PRIMARY KEY AUTOINCREMENT,
-                                          `name` TEXT,
-                                          `caption`	TEXT,
-                                          `title`	TEXT,
-                                          `date`	INTEGER,
-                                          `show`	INTEGER, 
-                                          `view`    INTEGER DEFAULT 0,
-                                          `vieworder` INTEGER)";                     
-            $this->sqlDB->exec($sql_create); 
+			/*Starting version 2.0, the number of tables is the count of this array*/
+			$tables_arr = array(
+				'art', 'user_settings', 'labels', 'comments', 'madetools', 'blockedips'
+			);			
+			$table_values = "'".implode("','", $tables_arr)."'"; 
+			/*check if some tables are in the database, if not create them*/
+			$query_check = "SELECT count(*) as ct from sqlite_master WHERE type='table' and `name` in ($table_values)"; 
+			$db_stat = $this->sqlDB->querySingle($query_check, true);
+ 
+			if($db_stat['ct'] != count($tables_arr)){
+				$this->createDB(); 
+			}
+			
         }catch (Exception $e){
             if($location != "." && $location !="./")
             {
@@ -85,35 +90,153 @@ class artDB{
                 if(strlen($ret)>0){
                     echo "Error: $ret";
                     echo "<br>\Note: the server user (apache -- maybe) needs to have rwx permission on $location to perform SQLite operations";
-                }
+				}else{
+					echo shell_exec("chmod u+rwx $location");
+					/*create the db*/
+					try{
+						//echo "$location/$dbName";
+						$this->sqlDB = new SQLite3("$location/$dbName");
+						$this->sqlDB->busyTimeout(5000);
+						$this->sqlDB->exec("PRAGMA journal_mode = wal;"); 
+						$this->createDB(); 
+					}catch (Exception $e){
+						echo "Error. Couldn't create SQLite DataBase. Probably some permission issues."; 
+						echo "<br><b>Useful Command to change access without changing ownership :</b>\n setfacl -m 'u:programX:rwx' /folder <br>";
+						echo "\nchgrp www-data ./folderName<br>";
+						echo "\nchmod g+rwx www-data"; 
+						echo "<br>www-data is usually the right group";
+						echo die(); 
+					}					
+				}
             }
-            echo shell_exec("chmod u+rwx $location");
-            /*create the db*/
-            $queryCreate =  "CREATE TABLE `art` (`id`	INTEGER PRIMARY KEY AUTOINCREMENT,
-                                          `name` TEXT,
-                                          `caption`	TEXT,
-                                          `title`	TEXT,
-                                          `date`	INTEGER,
-                                          `show`	INTEGER,
-                                          `view` INTEGER DEFAULT 0, 
-                                          `vieworder` INTEGER)";
-            try{
-                //echo "$location/$dbName";
-                $this->sqlDB = new SQLite3("$location/$dbName");
-                $this->sqlDB->busyTimeout(5000);
-                $this->sqlDB->exec("PRAGMA journal_mode = wal;"); 
-                $this->sqlDB->exec($queryCreate); 
-            }catch (Exception $e){
-                echo "Error. Couldn't create SQLite DataBase. Probably some permission issues."; 
-                echo "<br><b>Useful Command to change access without changing ownership :</b>\n setfacl -m 'u:programX:rwx' /folder <br>";
-                echo "\nchgrp www-data ./folderName<br>";
-                echo "\nchmod g+rwx www-data"; 
-                echo "<br>www-data is usually the right group";
-                echo die(); 
-            }
+            
+            
         }
         
     }
+
+    /**
+     * @description: deconstructor. is called when script ends and closes DB in a clean manner.
+     * Probably not neeeded since we use SQLite, but it is good practice
+     */
+    public function __destruct(){
+        try{
+            $this->sqlDB->close(); 
+        }catch(Exception $e){
+            //do nothing here
+        }
+    }
+
+	/**
+	*@description:  creates the database schema with some default parameters
+	*@parameter none: 
+	*@return none: 
+	*
+	**/
+	public function createDB(){
+		$sql_create = "CREATE TABLE IF NOT EXISTS `art` (`id`	INTEGER PRIMARY KEY AUTOINCREMENT,
+									  `name` TEXT,
+									  `caption`	TEXT,
+									  `title`	TEXT,
+									  `date`	INTEGER,
+									  `show`	INTEGER, 
+									  `view`    INTEGER DEFAULT 0,
+									  `vieworder` INTEGER)";                     
+		$this->sqlDB->exec($sql_create); 
+		/*Update from version 1.0 to 2.0*/
+		/*from v1.0 to 2.0 the column madewith was added*/
+		$sql_made_with = "ALTER TABLE `art` add column `madewith` text"; 
+		$this->sqlDB->exec($sql_made_with); 
+		
+		$sql_create_made_table = "CREATE TABLE IF NOT EXISTS `madetools` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `toolname` TEXT, `toolimg` TEXT, `tooltext` TEXT, UNIQUE(`toolname`))"; 
+		$this->sqlDB->exec($sql_create_made_table);
+		$made_tool_logos = "INSERT INTO `madetools` (`toolname`, `toolimg`, `tooltext`) VALUES
+													('CSP', 'CSP_logo.png', 'Clip Studio Paint'), 
+													('HAND', 'HAND_logo.png', 'By hand'), 
+													('IBIS', 'IBIG_logo.png', 'Ibis Paint'), 
+													('SAI', 'SAI_logo.png', 'Sai Tool'), 
+													('MEDIBANG', 'MEDIBANG_logo.png', 'Medibang'),
+													('KRITA', 'KRITA_logo.png', 'Krita'), 
+													('PHOTOSHOP', 'PHOTOSHOP_logo.png', 'Photoshop'), 
+													('AESPRITE', 'AESPRITE_logo.png', 'Aesprite')"; 
+													
+		$this->sqlDB->exec($made_tool_logos); 
+		
+		$sql_create_settings = "CREATE TABLE IF NOT EXISTS `user_settings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, 
+										`setting_name` TEXT, `data` TEXT, `type` TEXT, `long_name` TEXT, UNIQUE(`setting_name`) )";
+		$this->sqlDB->exec($sql_create_settings); 
+		/*create labels*/
+		$sql_create_labels = "CREATE TABLE IF NOT EXISTS `labels` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, 
+															 `label` TEXT, 
+															 `img_ref` INTEGER)"; 
+		$this->sqlDB->exec($sql_create_labels); 
+		
+		/*create comments*/
+		$sql_create_comments = "CREATE TABLE IF NOT EXISTS `comments` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `artid` INTEGER, `comment` TEXT, `ip` TEXT, `username` TEXT)"; 
+		$this->sqlDB->exec($sql_create_comments); 
+		
+		/*create blocked ip*/
+		$sql_ip_block = "CREATE TABLE IF NOT EXISTS `blockedips` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `ip` TEXT)"; 
+		$this->sqlDB->exec($sql_ip_block); 
+		
+		
+		/*insert default settings into DB*/
+		$default_settings_bg = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values ('background_color', 'hsl(0, 0%, 60%)', 'color', 'Main Site Background Color')"; 
+		$default_settings_border_width = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values ('imgborder_width', '4px', 'size', 'Image Border Width')"; 
+		$default_settings_border_style = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values ('imgborder_style', 'solid', 'style', 'Main Image Border Style')"; 
+		$default_settings_border_color = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values ('imgborder_color', 'black', 'color', 'Main Image Border Color')"; 
+		$default_settings_border_radius = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values ('imgborder_radius', '0px', 'size', 'Main Image Border Radius')"; 
+		$default_settings_font_name = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values ('font_name', 'Serif', 'text', 'Main Site Google Font Name')"; 
+		
+		$default_settings_max_rand_gallery = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values('MAX_RAND_GALLERY', '".MAX_RAND_GALLERY."', 'number', 'Number of Random Pictures')"; 
+		$default_settings_show_rand_gallery ="INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values('SHOW_RAND_GALLERY', '".SHOW_RAND_GALLERY."','bool', 'Show Random Gallery? ')";   
+		$default_settings_art_title ="INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values('ART_TITLE', '".ART_TITLE."','text', 'Your Site Title ')";   
+		
+		$default_settings_gallery_code = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values('GALLERY_ACCESS_CODE', '".GALLERY_ACCESS_CODE."','text', 'Require Access Code to Viwe Gallry')"; 
+		
+		$default_settings_main_blog = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values('MAIN_BLOG', '', 'text', 'Main Blog Entry (Something about Artist)')"; 
+		$default_settings_main_blog_img = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values('MAIN_BLOG_PIC', '', 'text', 'Main Blog Picture')"; 
+		
+		$default_settings_comment_cool_down = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values('COMMENT_COOL_DOWN', '0', 'number', 'Cool down between comments')"; ; 
+		$default_settings_comment_on_off = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`) values('COMMENT_ON_OFF', 'false', 'bool', 'Cool down between comments')"; ; 
+		
+		$defalt_loading_animation_img = "INSERT OR IGNORE INTO `user_settings`(`setting_name`, `data`, `type`, `long_name`)
+								values('loading_animation', 'loading.svg', 'image', 'Image Loading Animation')";
+									
+		$this->sqlDB->exec($default_settings_bg);
+		$this->sqlDB->exec($default_settings_border_width);
+		$this->sqlDB->exec($default_settings_border_style);
+		$this->sqlDB->exec($default_settings_border_color);
+		$this->sqlDB->exec($default_settings_border_radius);		
+		$this->sqlDB->exec($default_settings_max_rand_gallery);		
+		$this->sqlDB->exec($default_settings_show_rand_gallery);		
+		$this->sqlDB->exec($default_settings_art_title);		
+		$this->sqlDB->exec($default_settings_gallery_code);		
+		$this->sqlDB->exec($default_settings_main_blog); 
+		$this->sqlDB->exec($default_settings_main_blog_img); 
+		
+		$this->sqlDB->exec($default_settings_comment_cool_down);
+		$this->sqlDB->exec($default_settings_comment_on_off);
+		
+		$this->sqlDB->exec($defalt_loading_animation_img); 
+		
+	}
+	
+    /**
+     * @descriptioin: get user seettings
+     * @param none:
+     * @return all user defined settings in the DB
+     */
+    public function getUserSettings(){
+        $user_settings_res = $this->sqlDB->query("select * from `user_settings`");
+        $user_settings = array(); 
+
+        while($dat = $user_settings_res->fetchArray(SQLITE3_ASSOC)){
+            $user_settings[$dat['setting_name']] =  $dat;
+        }
+        return $user_settings; 
+    }
+
 
     /**
     * @description: get the count of all items in the database
@@ -177,7 +300,7 @@ class artDB{
         $smt = $this->sqlDB->prepare("select * from art where id= :id limit 1"); 
         $smt->bindValue(':id', $id); 
         $result = $smt->execute(); 
-        $itemData = $result->fetchArray();//returns false is nothing
+        $itemData = $result->fetchArray(SQLITE3_ASSOC);//returns false is nothing
         if(!$itemData){
             $itemData = $this->sqlDB->querySingle("select * from art order by vieworder DESC limit 1", true); 
         }
@@ -193,7 +316,7 @@ class artDB{
         $smt = $this->sqlDB->prepare("select * from art where id= :id and show='1' limit 1"); 
         $smt->bindValue(':id', $id); 
         $result = $smt->execute(); 
-        $itemData = $result->fetchArray();//returns false is nothing
+        $itemData = $result->fetchArray(SQLITE3_ASSOC);//returns false is nothing
         if(!$itemData){
             $itemData = $this->sqlDB->querySingle("select * from art where show='1' order by vieworder DESC limit 1", true); 
         }
@@ -250,6 +373,7 @@ class artDB{
         $result = $smt->execute(); 
         $itemDataID = $result->fetchArray();
 
+		$itemData = array(); 
         if(isItem($itemDataID)){
             $smt = $this->sqlDB->prepare("select * from art where vieworder < :vieworder and show='1' order by vieworder DESC limit 1"); 
             $smt->bindValue(':vieworder', $itemDataID['vieworder']); 
@@ -269,6 +393,7 @@ class artDB{
         $result = $smt->execute(); 
         $itemDataID = $result->fetchArray();
 
+		$itemData = array(); 
         if(isItem($itemDataID)){
             $smt = $this->sqlDB->prepare("select * from art where vieworder > :vieworder and show='1' order by vieworder ASC limit 1"); 
             $smt->bindValue(':vieworder', $itemDataID['vieworder']); 
@@ -834,11 +959,11 @@ function renderGallery(){
                 }
                 
                 if(prev_id != -1){
-                    $('#previousPart').html("&Larr;&nbsp;<br><img src='./imgs/<?="thumb".$prevItem['name']?>' style='width:50px'><br>&Larr;&nbsp;");
+                    $('#previousPart').html("&Larr;&nbsp;<br><img id='prevPartImg' src='./imgs/<?="thumb".$prevItem['name']?>' style='width:50px'><br>&Larr;&nbsp;");
                     //$('#previousPartMobile').html("<div align='center'>&Larr;&nbsp;<img src='./imgs/<?="thumb".$prevItem['name']?>' style='max-width:50%;max-height:50px' align='middle'></div>");
                 }
                 if(next_id != -1){
-                    $('#nextPart').html("&Rarr;&nbsp;<br><img src='./imgs/<?="thumb".$nextItem['name']?>' style='width:50px'><br>&Rarr;&nbsp;");
+                    $('#nextPart').html("&Rarr;&nbsp;<br><img id='nextPartImg' src='./imgs/<?="thumb".$nextItem['name']?>' style='width:50px'><br>&Rarr;&nbsp;");
                     //$('#nextPartMobile').html("<div align='center'><img src='./imgs/<?="thumb".$nextItem['name']?>' style='max-width:50%;max-height:50px' align='middle'>&nbsp;&Rarr;</div>");
                 }
                 
@@ -918,7 +1043,7 @@ function promptAccess(){
                 </div>
             </div>
             <div id='credit'>
-                Art Gallery: A Midnight Zen Production. version 1.0. <i><a href='https://github.com/czanas/artgallery' target='_blank'>@github</a></i>
+                Art Gallery: A Midnight Zen Production. version 2.0. <i><a href='https://github.com/czanas/artgallery' target='_blank'>@github</a></i>
             </div>
         </div>
     <?php

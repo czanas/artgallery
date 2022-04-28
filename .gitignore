@@ -1,2 +1,5 @@
 # ignore the following extensions
 adminup/*.htaccess
+dbs/*.db
+imgs/*conv*
+imgs/*.webp
